@@ -3,5 +3,9 @@
 *.in
 *.sol
 
+*in
+*out
+
+
 *.out
 *.exe
