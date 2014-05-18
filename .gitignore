@@ -1,11 +1,8 @@
 *~
 
-*.in
-*.sol
-
 *in
 *out
-
+*sol
 
 *.out
 *.exe
