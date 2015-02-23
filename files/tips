@@ -3,10 +3,17 @@ Division
 	4/3.0 = 1.333
 
 $ crun 1001
-crun () 
+crun ()
 { 
     g++ "$@".cpp;
     ./a.out < in
+}
+
+$ cruno 1001
+cruno ()
+{ 
+    g++ "$@".cpp;
+    ./a.out < in > out
 }
 
 $ uri 1001
@@ -15,7 +22,7 @@ uri()
 	python ./../files/uri.py "$@";
 }
 
-
+$ uris 1001
 uris()
 {
 	python ./../files/uri.py "$@" -s;
