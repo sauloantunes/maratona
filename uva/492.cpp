@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstdio>
 #include <string>
 
 using namespace std;
@@ -16,28 +17,28 @@ void piglatin(string s){
 
 int main(){
 	string s;
+	ios_base::sync_with_stdio(false);
 
 	while(getline(cin, s)){
+		int pos=0;
 		
 		for (int i = 0; i < s.size(); ++i){
 			if(isalpha(s[i]))
 				continue;
 
-			if(i == 0){
-				cout << s[0];
-
-				if(s.size() == 1)
-					break;
-
-				s = s.substr(1,-1);
-				i = -1;
+			if(i == pos){
+				cout << s[i];
+				pos++;
 				continue;
 			}
 
-			piglatin(s.substr(0, i));
-			s = s.substr(i, -1);
-			i = -1;
+			piglatin(s.substr(pos, i - pos));
+			cout << s[i];
+			pos = i + 1;
 		}
+
+		if(pos != s.size())
+			piglatin(s.substr(pos, s.size() - pos));
 
 		cout << endl;
 	}
