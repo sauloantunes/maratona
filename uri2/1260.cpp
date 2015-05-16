@@ -9,21 +9,15 @@ using namespace std;
 int main(){
 	int n;
 	string s;
-	bool first = true;
-
 
 	cin >> n;
-	getline(cin, s);
-	getline(cin, s);
+	cin.ignore(2);
 
 	while(n--){		
-		float q = 0;
+		int q = 0;
 		map<string, int> trees;
 
-		while(getline(cin, s)){
-			if(s.empty())
-				break;
-
+		while(getline(cin, s) && !s.empty()){
 			if(trees.find(s) != trees.end())
 				trees[s]++;
 			else
@@ -33,14 +27,10 @@ int main(){
 
 		map<string, int>::iterator it = trees.begin();
 
-		if(!first)
-			printf("\n");
-		
-		first = false;
+		for (it; it != trees.end(); it++)
+			printf("%s %.4f\n", it->first.c_str(), 100.0 * it->second/q);
 
-		for (it; it != trees.end(); it++){
-			float r = 100.0 * it->second/q;
-			printf("%s %.4f\n", it->first.c_str(), r);
-		}		
+		if(n)
+			cout << endl;
 	}
 }
