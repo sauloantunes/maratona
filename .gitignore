@@ -7,3 +7,6 @@
 *.out
 *.exe
 *.pyc
+
+user_psw
+user_email

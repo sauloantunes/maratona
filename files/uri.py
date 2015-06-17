@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 import re
+import os
 import requests
 import time
 import sys, getopt
+from getpass import getpass
 
 class Uri():
 	def __init__(self, problem_id):
 		# VARS
-		self.user_email    = "user@email.com"
-		self.user_password = "mypassword"
+
+		self.getUser()
 
 		self.run_problem_id  = problem_id
 		self.run_language_id = "2"			#cpp
@@ -22,6 +24,42 @@ class Uri():
 
 		self.s = requests.Session()
 		self.loadCode()
+
+	def getUser(self):
+		self.user_email    = self.getEmail()
+		self.user_password = self.getPassword()
+		try:
+			pass
+			#self.testLogin()
+		except:
+			self.getUser()
+
+
+	def getEmail(self):
+		try:
+			f = open("./user_email", "r");
+			email = f.read()
+			email = email.decode('base64', 'strict')
+		except:
+			email = raw_input("Type your e-mail: ")
+			f = open("./user_email", "w")
+			f.write(email.encode('base64','strict'))
+			f.close()
+
+		return email
+
+	def getPassword(self):
+		try:
+			f = open("./user_psw", "r+");
+			psw = f.read()
+			psw = psw.decode('base64', 'strict')
+		except:
+			psw = getpass("Type your password: ")
+			f = open("./user_psw", "w+")
+			f.write(psw.encode('base64','strict'))
+			f.close()
+
+		return psw
 
 	def login(self):
 		r = self.s.get(self.url_home)
