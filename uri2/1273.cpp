@@ -5,7 +5,6 @@ using namespace std;
 int main(){
 	int n, f=0;
 
-
 	while(cin >> n, n){
 		string v[n];
 		int t=0;
