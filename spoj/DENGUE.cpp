@@ -5,21 +5,19 @@
 
 using namespace std;
 
-int vis[MAX], g[MAX][MAX];
+int g[MAX][MAX];
 int n, x, y, aux, cont=1;
 
-void dfs(int v){
-	for (int i = 0; i < n; ++i){
-		if(g[v][i] && vis[i] == INF){
-			vis[i] = vis[v]+1;
-			dfs(i);
-		}
-	}
+void fw(){
+	for (int k = 0; k < n; ++k)
+		for (int j = 0; j < n; ++j)
+			for (int i = 0; i < n; ++i)
+				g[i][j] = min(g[i][j], g[i][k] + g[k][j]);
 }
 
 int main(){
 	while(cin >> n, n){
-		memset(g, 0, sizeof g);
+		memset(g, INF, sizeof g);
 
 		for (int i = 0; i < n-1; ++i){
 			cin >> x >> y;
@@ -27,17 +25,19 @@ int main(){
 			g[x][y] = g[y][x] = 1;
 		}
 
+		for (int i = 0; i < n; ++i)
+			g[i][i] = 0;
+
+		fw();
+
 		int price = INF;
 		int vila;
 
 		for (int i = 0; i < n; ++i){
-			memset(vis, INF, sizeof vis);
-			vis[i] = 0;
-			dfs(i);
 			aux = 0;
 			for (int j = 0; j < n; ++j)
-				aux = max(aux, vis[j]);
-
+				aux = max(aux, g[i][j]);
+			
 			if(aux < price){
 				price = aux;
 				vila = i+1;
