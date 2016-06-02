@@ -3,138 +3,135 @@ import re
 import os
 import requests
 import time
-import sys, getopt
+import sys
+import getopt
 from getpass import getpass
+from bs4 import BeautifulSoup
+
 
 class Uri():
-	def __init__(self, problem_id):
-		# VARS
+    def __init__(self, problem_id):
+        self.problem_id = problem_id
+        self.language_id = "2"
+        self.source_code = ""
 
-		self.getUser()
+        self.url_home = "https://www.urionlinejudge.com.br/judge/en/"
+        self.url_login = "https://www.urionlinejudge.com.br/judge/en/login"
+        self.url_submit = "https://www.urionlinejudge.com.br/judge/en/runs/add"
+        self.url_submissions = "https://www.urionlinejudge.com.br/judge/en/runs" + "?problem_id=" + problem_id
 
-		self.run_problem_id  = problem_id
-		self.run_language_id = "2"			#cpp
-		self.run_source_code = ""
+        self.session = requests.Session()
 
-		self.url_home   = "https://www.urionlinejudge.com.br"
-		self.url_login  = "https://www.urionlinejudge.com.br/judge/login"
-		self.url_submit = "https://www.urionlinejudge.com.br/judge/runs/add"
-		self.url_runs   = "https://www.urionlinejudge.com.br/judge/runs"
-		self.url_submissions = "https://www.urionlinejudge.com.br/judge/en/runs"
+        self.getUser()
 
-		self.s = requests.Session()
-		self.loadCode()
+        while not self.login():
+            self.deleteAccount()
+            self.getUser()
 
-	def getUser(self):
-		self.user_email    = self.getEmail()
-		self.user_password = self.getPassword()
-		try:
-			pass
-			#self.testLogin()
-		except:
-			self.getUser()
+    def deleteAccount(self):
+        os.remove('./user_email')
+        os.remove('./user_psw')
 
+    def getUser(self):
+        self.user_email = self.getEmail()
+        self.user_password = self.getPassword()
 
-	def getEmail(self):
-		try:
-			f = open("./user_email", "r");
-			email = f.read()
-			email = email.decode('base64', 'strict')
-		except:
-			email = raw_input("Type your e-mail: ")
-			f = open("./user_email", "w")
-			f.write(email.encode('base64','strict'))
-			f.close()
+    def getEmail(self):
+        try:
+            f = open("./user_email", "r")
+            email = f.read()
+            email = email.decode('base64', 'strict')
+        except:
+            email = raw_input("Type your e-mail: ")
+            f = open("./user_email", "w")
+            f.write(email.encode('base64', 'strict'))
+            f.close()
 
-		return email
+        return email
 
-	def getPassword(self):
-		try:
-			f = open("./user_psw", "r+");
-			psw = f.read()
-			psw = psw.decode('base64', 'strict')
-		except:
-			psw = getpass("Type your password: ")
-			f = open("./user_psw", "w+")
-			f.write(psw.encode('base64','strict'))
-			f.close()
+    def getPassword(self):
+        try:
+            f = open("./user_psw", "r+")
+            psw = f.read()
+            psw = psw.decode('base64', 'strict')
+        except:
+            psw = getpass("Type your password: ")
+            f = open("./user_psw", "w+")
+            f.write(psw.encode('base64', 'strict'))
+            f.close()
 
-		return psw
+        return psw
 
-	def login(self):
-		r = self.s.get(self.url_home)
+    def login(self):
+        self.page = self.session.get(self.url_home).text
+        self.getParams()
 
-		self.getToken(r.text, 'fields')
-		self.getToken(r.text, 'key')
+        response = self.session.post(self.url_login, data={"email": self.user_email,
+                                                           "password": self.user_password, 
+                                                           "remember_me": '0',
+                                                           "_method": 'POST',
+                                                           "_csrfToken": self.csrfToken,
+                                                           "_Token[fields]": self.tokenFields,
+                                                           "_Token[unlocked]": "",
+                                                           })
 
-		self.s.post(self.url_login, data={"data[User][email]"    : self.user_email,
-							  		      "data[User][password]" : self.user_password, 
-								          "data[_Token][key]"    : self.token_key,
-								          "data[_Token][fields]" : self.token_fields,
-								          "data[_Token][unlocked]" : ""
-								         })
+        if response.url == self.url_home:
+            return True
 
-	def submit(self):
-		r = self.s.get(self.url_submit)
+    def submit(self):
+        self.loadCode()
 
-		self.getToken(r.text, 'fields')
-		self.getToken(r.text, 'key')
+        self.page = self.session.get(self.url_submit).text
+        self.getParams()
 
-		r = self.s.post(self.url_submit, data={"data[_Token][key]"      : self.token_key,
-							   	        	   "data[_Token][fields]"   : self.token_fields,
-									           "data[_Token][unlocked]" : "",
-								   	           "data[Run][problem_id]"  : self.run_problem_id,
-								   	           "data[Run][language_id]" : self.run_language_id,
-								   	           "data[Run][source_code]" : self.run_source_code
-									          })
+        response = self.session.post(self.url_submit, data={"_method": 'POST',
+                                                            "_csrfToken": self.csrfToken,
+                                                            "problem_id": self.problem_id,
+                                                            "language_id": self.language_id,
+                                                            "template": '1',
+                                                            "source_code": self.source_code,
+                                                            "_Token[fields]": self.tokenFields,
+                                                            "_Token[unlocked]": "",
+                                                            })
 
-	def getStatus(self):
-		r = self.s.get(self.url_submissions)
+        print "Submited!"
 
-		self.getToken(r.text, 'fields')
-		self.getToken(r.text, 'key')
+    def getStatus(self):
+        self.page = self.session.get(self.url_submissions).text
+        soup = BeautifulSoup(self.page, 'html5lib')
+        tbody = soup.find('tbody')
+        tr = tbody.find('tr')
+        try:
+            td = tr.find_all('td')[3]
+            return td.text.strip()
+        except IndexError:
+            return "You have not submitted any solutions yet!"
 
-		r = self.s.post(self.url_runs, data={"data[_Token][key]"      : self.token_key,
-									   	     "data[_Token][fields]"   : self.token_fields,
-										     "data[_Token][unlocked]" : "",
-									   	     "data[filter][problem]"  : self.run_problem_id,
-									   	     "data[filter][language]" : "",
-									   	     "data[filter][answer]"   : ""
-										    })
-		
-		#f = open('page.html', 'w+')
-		#f.write(r.text.encode('utf-8'))
-		#f.close()
+    def getParams(self):
+        soup = BeautifulSoup(self.page, 'html5lib')
+        self.csrfToken = soup.find('input', {'name': '_csrfToken'}).attrs['value']
+        self.tokenFields = soup.find('input', {'name': '_Token[fields]'}).attrs['value']
 
-		regex = '\/judge\/runs/code\/[0-9]*">[a-zA-Z ]*'
-		answer = re.findall(regex, r.text)
-		print answer[1].split('>')[-1]
-
-	def getToken(self, text, t):
-		# makes a parse on the html response
-		regex = '\[_Token\]\[' + t + '\]" value="[^"]*'
-		token = re.search(regex, text)
-		self.__dict__['token_' + t] = token.group(0).split('\"')[-1]
-
-	def loadCode(self):		
-		f = open(self.run_problem_id + '.cpp', 'r')
-		self.run_source_code = f.read()
-		f.close()
-		
+    def loadCode(self):        
+        f = open(self.problem_id + '.cpp', 'r')
+        self.source_code = f.read()
+        f.close()
 
 if __name__ == '__main__':
+    problem_id = sys.argv[1].split('.')[0]  # 1324.cpp
+    uri = Uri(problem_id)
 
-	uri = Uri(sys.argv[1].split('.')[0])
-	uri.login()
+    if(len(sys.argv) == 2):  # uri.py code.cpp
+        uri.submit()
+        while True:
+            response = uri.getStatus()
+            print response
+            if response == "- In queue -":
+                time.sleep(1)
+            else:
+                break
 
-	if(len(sys.argv) == 2):   # uri.py code.cpp
-		uri.submit()
-		print "Submited!"
-		time.sleep(3)
-		uri.getStatus()
-
-	elif(len(sys.argv) == 3): # uri.py code.cpp -s
-		for arg in sys.argv:
-			if(arg == '-s'):
-				uri.getStatus()
-				
+    elif(len(sys.argv) == 3):  # uri.py code.cpp -s
+        for arg in sys.argv:
+            if(arg == '-s'):
+                print uri.getStatus()
